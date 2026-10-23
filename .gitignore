@@ -1,0 +1,17 @@
+# Entornos locales
+**/.venv/
+**/.env
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/.dart_tool/
+**/.flutter-plugins*
+frontend/build/
+**/coverage/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

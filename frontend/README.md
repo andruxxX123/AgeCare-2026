@@ -1,0 +1,93 @@
+# AgeCare — Frontend Flutter (auth + patients)
+
+## AgeCare web para Vercel
+
+La interfaz web del AgeCare está en [`demo-web/`](demo-web/). Es un sitio estático
+con datos de ejemplo y acceso de referencia para Familia, Cuidador, Médico y Adulto
+mayor. Incluye el logo oficial, conversación Familia–Cuidador, marketplace,
+agenda, Salud editable para Familia y Médico, siete accesos de cuidadoras, juegos variados y asistente local guiado. La IA generativa todavía no está conectada. Para Vercel configura **Root Directory** como
+`demo-web` y **Framework Preset** como `Other`. Las instrucciones de despliegue
+están en [`demo-web/DEPLOY.md`](demo-web/DEPLOY.md).
+
+El proyecto Flutter de esta raíz es independiente del AgeCare web y corresponde
+a Codemagic. El AgeCare web no se conecta al backend FastAPI ni sincroniza datos
+entre dispositivos.
+
+Este entregable implementa la arquitectura feature-first pedida, alineada
+1:1 con el backend FastAPI adjunto (`app/features/auth`, `app/features/patients`).
+
+## Estructura
+
+```
+lib/
+├── core/
+│   ├── config/app_config.dart      # variables --dart-define (USE_MOCKS, API_BASE_URL, ...)
+│   ├── domain/enums.dart           # RoleType, SexType — equivalente a app/models/enums.py
+│   ├── network/
+│   │   ├── api_client.dart         # Dio + interceptor de auth + parseo de errores
+│   │   └── api_exception.dart      # modelo del error estándar + guardApiCall()
+│   ├── providers/core_providers.dart
+│   ├── router/app_router.dart      # GoRouter
+│   ├── storage/token_storage.dart  # flutter_secure_storage
+│   └── theme/                      # tokens y ThemeData de la Guía de Diseño v1.0
+├── features/
+│   ├── auth/
+│   │   ├── domain/                 # UserModel, AuthResultModel
+│   │   ├── data/auth_repository.dart
+│   │   └── presentation/           # providers (Riverpod) + RegisterScreen, LoginScreen
+│   ├── patients/
+│   │   ├── domain/                 # PatientModel, PatientMemberModel
+│   │   ├── data/patients_repository.dart
+│   │   └── presentation/           # providers (Riverpod) + CreatePatientScreen
+│   └── shell/presentation/screens/ # MainShell (bottom nav), DashboardScreen, SectionScreen
+└── main.dart
+```
+
+## Dependencias a agregar en `pubspec.yaml`
+
+Este código asume estos paquetes (ajusta versiones a lo que ya use el
+proyecto Flutter existente, si `agecare_app` ya tiene un `pubspec.yaml`):
+
+```yaml
+dependencies:
+  flutter_riverpod: ^2.5.0
+  go_router: ^14.0.0
+  dio: ^5.4.0
+  flutter_secure_storage: ^9.0.0
+  google_fonts: ^6.2.0
+```
+
+Si prefieres no depender de red para la tipografía (más confiable para
+demos sin conexión), reemplaza `google_fonts` por los archivos de Nunito
+Sans como assets — la propia Guía de Diseño (5.1) lo deja como alternativa
+válida.
+
+## Endpoints realmente conectados
+
+| Pantalla | Endpoint | Estado en el backend adjunto |
+|---|---|---|
+| `RegisterScreen` | `POST /api/v1/auth/register` | ✅ implementado |
+| `CreatePatientScreen` | `POST /api/v1/patients` → `GET /api/v1/patients/{id}` | ✅ implementado |
+| `DashboardScreen` | `GET /api/v1/patients` (listado) | ✅ implementado |
+| `LoginScreen` | `POST /api/v1/auth/login` | ✅ implementado |
+| Refresh de sesión (`ApiClient`) | `POST /api/v1/auth/refresh` | ✅ implementado |
+| `VitalsScreen` | `GET/POST /api/v1/patients/{id}/vitals` | ✅ implementado |
+
+El cliente mantiene la separación entre configuración, red, repositorios y
+presentación. Los módulos clínicos todavía no conectados —alertas,
+medicaciones, comunicación y wearable físico— pueden agregarse siguiendo la
+misma estructura sin reescribir autenticación ni pacientes.
+
+## Decisiones de diseño
+
+- **Modelos escritos a mano** (sin `freezed`/`json_serializable`): así el
+  código compila sin un paso de `build_runner`. Si el equipo adopta
+  `freezed`, los campos y `fromJson`/`toJson` ya siguen esa convención y
+  la migración es mecánica.
+- **Manejo de errores centralizado**: `ApiClient` traduce cualquier
+  `DioException` a `ApiException` (mismo `code`/`message`/`details` que
+  documenta la sección 2.4 de la especificación), y `guardApiCall()` es el
+  único punto donde los repositorios necesitan capturar excepciones.
+- **Tema**: los colores viven en `AppColors` con los mismos nombres de
+  token que el Anexo A de la Guía de Diseño (`teal600`, `navy800`, ...),
+  para que un cambio de paleta futuro sea un solo archivo.

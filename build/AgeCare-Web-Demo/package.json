@@ -1,0 +1,12 @@
+{
+  "name": "agecare-AgeCare-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AgeCare de prueba AgeCare con datos de ejemplo y sin servicios externos.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
